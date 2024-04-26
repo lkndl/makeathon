@@ -62,12 +62,12 @@ scRNA, transcriptomics, blood+urine proteins, protein interactions
 No GNNs in this hackathon?
 
 = areas
-| field          | who  |
-|----------------|------|
-| Neo4j + cipher | Benn |
-| featurecloud   | Erta |
-| ML             | Rohan + Leo |
 
+| field          | who         | notes            |
+|----------------|-------------|------------------|
+| Neo4j + cipher | Benn        |                  |
+| featurecloud   | Erta        |                  |
+| ML             | Rohan + Leo | output CSV files |
 
 
 | infra       | who   |

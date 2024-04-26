@@ -9,7 +9,12 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.11"
 FeatureCloud = "^0.0.30"
+bottle = "^0.12.25"
+neo4j = "^5.20.0"
 
+
+[tool.poetry.group.dev.dependencies]
+networkx-neo4j = "^0.0.2"
 
 [build-system]
 requires = ["poetry-core"]
