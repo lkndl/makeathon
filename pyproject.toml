@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "makeathon"
+version = "0.1.0"
+description = "Hacking our way to greatness."
+authors = ["Your Name <you@example.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+FeatureCloud = "^0.0.30"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
