@@ -33,3 +33,24 @@ Das habe ich von den featurecloud [dev docs](https://featurecloud.ai/assets/deve
 
 Dabei wird euch eine Test-ID angezeigt! Mit `ftc test info --test-id 5` sieht man bissl was, und in `/data/tests` findet ihr wahrscheinlich Ergebnisse davon. Bei mir sind das für das `mnist`-Repo leere zip files
 Legt euch einen featurecloud.ai-Account an, dann könnt ihr euch das fancy im browser anschauen: https://featurecloud.ai/development/test
+
+
+# PersonalizedMedicine container
+
+```bash
+sudo systemctl restart docker
+make build
+
+docker run -d -v ./config.yml:/mnt/input/config.yml -v ./data/output:/mnt/output -p 9000:9000 featurecloud.ai/bionerds:latest
+# There should be a docker container now:
+docker container ls
+# extract the ID
+CONTAINER_ID=$(docker container ls | tail -n 1 | cut -d ' ' -f 1) && echo "CONTAINER_ID is right now: $CONTAINER_ID"
+# if you're building and re-building right now, the container ID has just changed after `make build`
+docker restart $CONTAINER_ID
+# Don't run in a && pipe:
+curl --location 'http://localhost:9000/setup' --header 'Content-Type: application/json' --data '{"id": "0000000000000000","coordinator": false,"coordinatorID": "0000000000000000","clients": []}'
+
+# This is the output
+docker logs $CONTAINER_ID
+```
