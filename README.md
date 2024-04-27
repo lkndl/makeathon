@@ -23,8 +23,13 @@ featurecloud app build .
 ```
 Das buildet vielleicht erfolgreich. Dann man muss jetzt einen controller starten.
 `featurecloud controller start`
-Theoretisch können mehrere laufen (mit `ls` statt `start` listen) aber bei mir ging das nicht. Denke in dem Bsp ist irgendwas hardgecodet, das sich da quer stellt.
+Theoretisch können mehrere laufen (mit `ls` statt `start` listen) aber bei mir ging das nicht. Denke in dem Bsp ist irgendwas hardgecodet, das sich da quer stellt. Man sieht der controller aber auf `http://localhost:8000/`
 
 Mit `docker images` könnt ihr nachschauen welche images ihr habt, und dann zB `app-tutorial` hiermit starten:
 
 `featurecloud test start --app-image app-tutorial`
+
+Das habe ich von den featurecloud [dev docs](https://featurecloud.ai/assets/developer_documentation/getting_started.html)
+
+Dabei wird euch eine Test-ID angezeigt! Mit `ftc test info --test-id 5` sieht man bissl was, und in `/data/tests` findet ihr wahrscheinlich Ergebnisse davon. Bei mir sind das für das `mnist`-Repo leere zip files
+Legt euch einen featurecloud.ai-Account an, dann könnt ihr euch das fancy im browser anschauen: https://featurecloud.ai/development/test
