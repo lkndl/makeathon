@@ -29,7 +29,7 @@ def write_output(content, file_path=f"{OUTPUT_DIR}/results.txt"):
 
 
 def write_csv(df: pd.DataFrame, file_path=f'{OUTPUT_DIR}/results.csv'):
-    df.to_csv(file_path)
+    df.to_csv(file_path, index=False)
 
 
 def convert_to_np(data):

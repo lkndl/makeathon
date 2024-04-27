@@ -70,3 +70,7 @@ curl --location 'http://localhost:9000/setup' --header 'Content-Type: applicatio
 # This is the output
 docker logs $CONTAINER_ID
 ```
+
+make build && docker container ls && CONTAINER_ID=$(docker container ls | tail -n 1 | cut -d ' ' -f 1) && echo "CONTAINER_ID is right now: $CONTAINER_ID"
+
+docker stop $CONTAINER_ID && docker run -d -v ./config.yml:/mnt/input/config.yml -v ./data/output:/mnt/output -p 9000:9000 featurecloud.ai/bionerds:latest
