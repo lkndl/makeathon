@@ -1,23 +1,19 @@
-from FeatureCloud.app.engine.app import AppState, app_state, Role
-import time
-import os
-import pickle
-import numpy as np
 import logging
 from dataclasses import dataclass
 
-from neo4j import GraphDatabase, Query, Record
-from neo4j.exceptions import ServiceUnavailable
-from pandas import DataFrame
+import numpy as np
+from FeatureCloud.app.engine.app import AppState, app_state
+from FeatureCloud.app.engine.app import Role
+from neo4j import GraphDatabase
+from sklearn.ensemble import RandomForestClassifier
 
 from utils import read_config, write_output
-
-from FeatureCloud.app.engine.app import AppState, app_state
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 config = read_config()
+
 
 @dataclass
 class Patient:
@@ -26,7 +22,7 @@ class Patient:
     genes: [str]
     proteins: [str]
     phenotypes: [str]
-    is_healthy: bool
+    is_sick: bool
 
     def __init__(self, pa, di, ge, pr, ph):
         self.patient_id = pa
@@ -34,19 +30,31 @@ class Patient:
         self.genes = ge
         self.proteins = pr
         self.phenotypes = ph
-        self.is_healthy = self.diseases == ['control']
+        self.is_sick = self.diseases != ['control'] and len(self.diseases)
+
 
 @dataclass
-class Row:
+class TrainRow:
     features: np.array
     diseases: np.array
-    is_healthy: bool
+    is_sick: bool
 
     def __init__(self, data_binary_entry: ([int], [int]), healthy_idx: int):
         fts, dis = data_binary_entry
         self.features = np.array(fts)
-        self.is_healthy = bool(dis.pop(healthy_idx))
+        self.is_sick = not bool(dis.pop(healthy_idx))
         self.diseases = np.array(dis)
+
+
+@dataclass
+class ValRow:
+    patient_id: str
+    features: np.array
+
+    def __init__(self, patient_id, fts: [int]):
+        self.patient_id = patient_id
+        self.features = np.array(fts)
+
 
 @app_state('initial')
 class ExecuteState(AppState):
@@ -72,11 +80,21 @@ class ExecuteState(AppState):
 
             query = (
                 "MATCH (b:Biological_sample)-[:HAS_DISEASE]->() "
-                "RETURN b.subjectid"
+                "RETURN DISTINCT b.subjectid"
             )
             result = session.run(query)
             relevant_subjects = np.array([record["b.subjectid"] for record in result])
             relevant_subjects = np.unique(relevant_subjects)
+
+            query_val = (
+                "MATCH (b:Biological_sample) "
+                "WHERE NOT (b)-[:HAS_DISEASE]->() "
+                "RETURN b"
+            )
+            result = session.run(query_val)
+            val_subjects = np.array([record["b.subjectid"] for record in result])
+            val_subjects = np.unique(val_subjects)
+
             data_total = []
             property_total = []
             disease_total = []
@@ -98,9 +116,7 @@ class ExecuteState(AppState):
                 result_info = session.run(query_info, patient_id=patient)
                 result_info = result_info.single()
                 # diseases, genes, proteins, phenotypes = result_info[1:5]
-                #
                 # healthy = diseases == ['control']
-                #
                 # rows.append(Row())
                 # patients.append(Patient(patient, *result_info[1:5]))
 
@@ -109,54 +125,90 @@ class ExecuteState(AppState):
                 data_total.append([subject_property, subject_health])
                 property_total.extend(subject_property)
                 disease_total.extend(subject_health)
-            logger.info('queries done')
-            property_total = np.unique(np.array(property_total))
-            disease_total = np.unique(np.array(disease_total))
-            property_dict = {value: index for index, value in enumerate(property_total)}
-            disease_dict = {value: index for index, value in enumerate(disease_total)}
-            data_binary = []
+            logger.info('train set queries done')
 
-            # encode the ragged string lists as a binary numpy array
-            for i in data_total:
-                p_list = [property_dict[value] for value in i[0]]
-                binary_p = [0] * len(property_total)
-                for index in p_list:
-                    binary_p[index] = 1
+            data_val = []
+            for subject in val_subjects:
+                query_info = (
+                    "MATCH (b:Biological_sample {subjectid: $sample_id}) "
+                    "OPTIONAL MATCH (b)-[:HAS_PROTEIN]->(p:Protein) "
+                    "OPTIONAL MATCH (b)-[:HAS_PHENOTYPE]->(ph:Phenotype) "
+                    "OPTIONAL MATCH (b)-[:HAS_DAMAGE]->(g:Gene) "
+                    "RETURN b, "
+                    "COLLECT(DISTINCT g.id) AS genes_ids, "
+                    "COLLECT(DISTINCT p.id) AS proteins_ids, "
+                    "COLLECT(DISTINCT ph.id) AS phenotypes_ids"
+                )
+                result_info = session.run(query_info, sample_id=subject)
+                result_info = result_info.single()
+                subject_property = result_info[1] + result_info[2] + result_info[3]
+                data_val.append([subject, subject_property])
+                property_total.extend(subject_property)
+                # disease_total.extend(result_info[1])
+            logger.info('val set queries done')
 
-                d_list = [disease_dict[value] for value in i[1]]
-                binary_d = [0] * len(disease_dict)
-                for index in d_list:
-                    binary_d[index] = 1
-                data_binary.append([binary_p, binary_d])
-            logger.info('encoding done')
+        property_total = np.unique(np.array(property_total))
+        disease_total = np.unique(np.array(disease_total))
+        property_dict = {value: index for index, value in enumerate(property_total)}
+        disease_dict = {value: index for index, value in enumerate(disease_total)}
+        data_binary = []
 
-            # with open("data_binary", "wb") as fp:
-            #     pickle.dump(data_binary, fp)
-            # with open("property_dict", "wb") as fp:
-            #     pickle.dump(property_dict, fp)
-            # with open("disease_dict", "wb") as fp:
-            #     pickle.dump(disease_dict, fp)
+        # encode the ragged string lists as a binary numpy array
+        for i in data_total:
+            p_list = [property_dict[value] for value in i[0]]
+            binary_p = [0] * len(property_total)
+            for index in p_list:
+                binary_p[index] = 1
 
-            rows = list()
-            healthy_idx = disease_dict['control']
-            for patient in data_binary:
-                row = Row(patient, healthy_idx)
-                rows.append(row)
+            d_list = [disease_dict[value] for value in i[1]]
+            binary_d = [0] * len(disease_dict)
+            for index in d_list:
+                binary_d[index] = 1
+            data_binary.append([binary_p, binary_d])
 
-            X = np.stack([np.concatenate([r.features, r.diseases]) for r in rows])
-            y = np.array([int(r.is_healthy) for r in rows])
-            logger.info('transforming to X and y done')
+        val_binary = []
+        for i in data_val:
+            p_list = [property_dict[value] for value in i[1]]
+            binary_p = [0] * len(property_total)
+            for index in p_list:
+                binary_p[index] = 1
+            val_binary.append([i[0], binary_p])
+        logger.info('encoding done')
 
-            # TODO insert classifier here
+        # with open("data_binary", "wb") as fp:
+        #     pickle.dump(data_binary, fp)
+        # with open("val_binary", "wb") as fp:
+        #     pickle.dump(val_binary, fp)
+        # with open("property_dict", "wb") as fp:
+        #     pickle.dump(property_dict, fp)
+        # with open("disease_dict", "wb") as fp:
+        #     pickle.dump(disease_dict, fp)
 
-            # Example Query to Count Nodes
-            node_count_query = "MATCH (n) RETURN count(n)"
+        healthy_idx = disease_dict['control']
+        train_rows = [TrainRow(patient, healthy_idx) for patient in data_binary]
+        X = np.stack([np.concatenate([r.features, r.diseases]) for r in train_rows])
+        y = np.array([int(r.is_sick) for r in train_rows])
 
-            # Use .data() to access the results array
-            results = session.run(node_count_query).data()
-            logger.info(results)
+        val_rows = [ValRow(*p) for p in val_binary]
+        val_X = np.stack([np.concatenate([r.features]) for r in val_rows])
+        val_patient_ids = np.array([r.patient_id for r in val_rows])
 
-        write_output(f"{results}")
+        logger.info('transforming to X and y done')
+
+        kwargs = dict(max_depth=10, random_state=0)
+        logger.info(f'init an RF with {kwargs}')
+        clf = RandomForestClassifier(**kwargs)
+
+        logger.info(f'fitting ...')
+        clf.fit(X, y)
+
+        logger.info(f'predicting ...')
+        predicted_classes = clf.predict(val_X)
+
+        results = np.hstack((val_patient_ids, predicted_classes))
+        logger.info(results)
+
+        write_output(results)
 
         # Close the driver connection
         driver.close()

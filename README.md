@@ -27,9 +27,9 @@ Theoretisch können mehrere laufen (mit `ls` statt `start` listen) aber bei mir 
 
 Mit `docker images` könnt ihr nachschauen welche images ihr habt, und dann zB `bionerds` hiermit starten:
 
-`featurecloud test start --app-image bionerds`
-
 # FeatureCloud Testing
+
+`featurecloud test start --app-image bionerds`
 
 Das habe ich von den featurecloud [dev docs](https://featurecloud.ai/assets/developer_documentation/getting_started.html)
 
