@@ -1,6 +1,8 @@
+import logging
+from pathlib import Path
+
 import pandas as pd
 import yaml
-import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -8,18 +10,20 @@ logger = logging.getLogger(__name__)
 INPUT_DIR = '/mnt/input'
 OUTPUT_DIR = '/mnt/output'
 
+
 def read_config(file_path=f"{INPUT_DIR}/config.yml"):
+    if not (file_path := Path(file_path)).is_file():
+        # when there is no mounted drive, use the supplied config.yml
+        file_path = file_path.name
     try:
         with open(file_path, "r") as config_file:
             config = yaml.safe_load(config_file)
         return config
-                
     except FileNotFoundError:
         logger.info(f"Config file '{file_path}' not found.")
 
 
 def write_output(content, file_path=f"{OUTPUT_DIR}/results.txt"):
-    
     with open(file_path, "w") as text_file:
         text_file.write(content)
 
@@ -29,7 +33,6 @@ def convert_to_np(data):
         return data.to_numpy()
     else:
         raise ValueError("Input data is not a Pandas Series or DataFrame.")
-
 
 ## Example Function how to read input files
 # def read_files(train: str, test_input: str, sep: str, label_col: str):

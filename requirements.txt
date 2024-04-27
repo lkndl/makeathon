@@ -16,7 +16,3 @@ pyyaml==6.0.1
 featurecloud==0.0.29
 
 scikit-learn
-lightning
-torch
-torchmetrics
-torchvision

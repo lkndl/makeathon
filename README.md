@@ -19,23 +19,32 @@ Und ich folge gerade https://github.com/FeatureCloud/app-tutorial
 ```
 git clone https://github.com/FeatureCloud/app-tutorial
 cd app-tutorial
-featurecloud app build .
+featurecloud app build . bionerds
 ```
 Das buildet vielleicht erfolgreich. Dann man muss jetzt einen controller starten.
 `featurecloud controller start`
 Theoretisch können mehrere laufen (mit `ls` statt `start` listen) aber bei mir ging das nicht. Denke in dem Bsp ist irgendwas hardgecodet, das sich da quer stellt. Man sieht der controller aber auf `http://localhost:8000/`
 
-Mit `docker images` könnt ihr nachschauen welche images ihr habt, und dann zB `app-tutorial` hiermit starten:
+Mit `docker images` könnt ihr nachschauen welche images ihr habt, und dann zB `bionerds` hiermit starten:
 
-`featurecloud test start --app-image app-tutorial`
+`featurecloud test start --app-image bionerds`
+
+# FeatureCloud Testing
 
 Das habe ich von den featurecloud [dev docs](https://featurecloud.ai/assets/developer_documentation/getting_started.html)
 
-Dabei wird euch eine Test-ID angezeigt! Mit `ftc test info --test-id 5` sieht man bissl was, und in `/data/tests` findet ihr wahrscheinlich Ergebnisse davon. Bei mir sind das für das `mnist`-Repo leere zip files
+Dabei wird euch eine Test-ID angezeigt! Mit `featurecloud test info --test-id 5` sieht man bissl was, und in `/data/tests` findet ihr wahrscheinlich Ergebnisse davon. Bei mir sind das für das `mnist`-Repo leere zip files
 Legt euch einen featurecloud.ai-Account an, dann könnt ihr euch das fancy im browser anschauen: https://featurecloud.ai/development/test
 
+Für's deployment braucht man auch noch einen Docker-Account. Dann macht man 
+```
+docker login
+docker login featurecloud.ai
+# Dann die App bionerds auf featurecloud.ai im Browser anlegen! Erst dann funktioniert:
+featurecloud app publish bioners
+```
 
-# PersonalizedMedicine container
+# PersonalizedMedicine container Docker Testing
 
 Full restart and rebuild
 ```bash
@@ -43,6 +52,7 @@ sudo systemctl restart docker
 make build
 docker run -d -v ./config.yml:/mnt/input/config.yml -v ./data/output:/mnt/output -p 9000:9000 featurecloud.ai/bionerds:latest
 curl --location 'http://localhost:9000/setup' --header 'Content-Type: application/json' --data '{"id": "0000000000000000","coordinator": false,"coordinatorID": "0000000000000000","clients": []}'
+docker container ls && CONTAINER_ID=$(docker container ls | tail -n 1 | cut -d ' ' -f 1) && echo "CONTAINER_ID is right now: $CONTAINER_ID"
 docker logs $CONTAINER_ID
 ```
 
