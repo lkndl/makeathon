@@ -37,18 +37,24 @@ Legt euch einen featurecloud.ai-Account an, dann könnt ihr euch das fancy im br
 
 # PersonalizedMedicine container
 
+Full restart and rebuild
 ```bash
 sudo systemctl restart docker
 make build
-
 docker run -d -v ./config.yml:/mnt/input/config.yml -v ./data/output:/mnt/output -p 9000:9000 featurecloud.ai/bionerds:latest
-# There should be a docker container now:
-docker container ls
-# extract the ID
-CONTAINER_ID=$(docker container ls | tail -n 1 | cut -d ' ' -f 1) && echo "CONTAINER_ID is right now: $CONTAINER_ID"
-# if you're building and re-building right now, the container ID has just changed after `make build`
-docker restart $CONTAINER_ID
-# Don't run in a && pipe:
+curl --location 'http://localhost:9000/setup' --header 'Content-Type: application/json' --data '{"id": "0000000000000000","coordinator": false,"coordinatorID": "0000000000000000","clients": []}'
+docker logs $CONTAINER_ID
+```
+
+If you're building and re-building right now: Make changes, then:
+```bash
+make build
+# get the old container ID first:
+docker container ls && CONTAINER_ID=$(docker container ls | tail -n 1 | cut -d ' ' -f 1) && echo "CONTAINER_ID is right now: $CONTAINER_ID"
+docker stop $CONTAINER_ID
+# start the new version
+docker run -d -v ./config.yml:/mnt/input/config.yml -v ./data/output:/mnt/output -p 9000:9000 featurecloud.ai/bionerds:latest
+docker container ls && CONTAINER_ID=$(docker container ls | tail -n 1 | cut -d ' ' -f 1) && echo "CONTAINER_ID just changed and is now: $CONTAINER_ID"
 curl --location 'http://localhost:9000/setup' --header 'Content-Type: application/json' --data '{"id": "0000000000000000","coordinator": false,"coordinatorID": "0000000000000000","clients": []}'
 
 # This is the output
