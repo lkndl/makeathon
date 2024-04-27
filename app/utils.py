@@ -28,6 +28,10 @@ def write_output(content, file_path=f"{OUTPUT_DIR}/results.txt"):
         text_file.write(content)
 
 
+def write_csv(df: pd.DataFrame, file_path=f'{OUTPUT_DIR}/results.csv'):
+    df.to_csv(file_path)
+
+
 def convert_to_np(data):
     if isinstance(data, (pd.Series, pd.DataFrame)):
         return data.to_numpy()

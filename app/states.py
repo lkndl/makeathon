@@ -2,12 +2,13 @@ import logging
 from dataclasses import dataclass
 
 import numpy as np
+import pandas as pd
 from FeatureCloud.app.engine.app import AppState, app_state
 from FeatureCloud.app.engine.app import Role
 from neo4j import GraphDatabase
 from sklearn.ensemble import RandomForestClassifier
 
-from utils import read_config, write_output
+from utils import read_config, write_csv
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -205,10 +206,11 @@ class ExecuteState(AppState):
         logger.info(f'predicting ...')
         predicted_classes = clf.predict(val_X)
 
-        results = np.hstack((val_patient_ids, predicted_classes))
+        results = pd.DataFrame(np.hstack((val_patient_ids, predicted_classes)),
+                               columns=['subject_id', 'disease'])
         logger.info(results)
 
-        write_output(results)
+        write_csv(results)
 
         # Close the driver connection
         driver.close()
