@@ -250,40 +250,36 @@ class ExecuteState(AppState):
                 query_info = (
                     "MATCH (b:Biological_sample {subjectid: $sample_id}) "
                     "OPTIONAL MATCH (b)-[:HAS_DISEASE]->(d:Disease) "
-                    "OPTIONAL MATCH (b)-[:HAS_PROTEIN]->(p:Protein) "
                     "OPTIONAL MATCH (b)-[:HAS_PHENOTYPE]->(ph:Phenotype) "
                     "OPTIONAL MATCH (b)-[:HAS_DAMAGE]->(g:Gene) "
                     "RETURN b, "
                     "COLLECT(DISTINCT CASE WHEN EXISTS(d.id) THEN d.id ELSE d.name END) AS diseases_synonyms, "
                     "COLLECT(DISTINCT g.id) AS genes_ids, "
-                    "COLLECT(DISTINCT p.id) AS proteins_ids, "
                     "COLLECT(DISTINCT ph.id) AS phenotypes_ids"
                 )
                 result_info = session.run(query_info, sample_id=subject)
                 result_info = result_info.single()
-                subject_property = result_info[2] + result_info[3] + result_info[4]
+                subject_property = result_info[2] + result_info[3]
                 subject_health = result_info[1]
                 data_total.append([subject_property, subject_health])
-                property_total.extend(result_info[2] + result_info[3] + result_info[4])
+                property_total.extend(result_info[2] + result_info[3])
                 disease_total.extend(result_info[1])
 
             data_val = []
             for subject in val_subjects:
                 query_info = (
                     "MATCH (b:Biological_sample {subjectid: $sample_id}) "
-                    "OPTIONAL MATCH (b)-[:HAS_PROTEIN]->(p:Protein) "
                     "OPTIONAL MATCH (b)-[:HAS_PHENOTYPE]->(ph:Phenotype) "
                     "OPTIONAL MATCH (b)-[:HAS_DAMAGE]->(g:Gene) "
                     "RETURN b, "
                     "COLLECT(DISTINCT g.id) AS genes_ids, "
-                    "COLLECT(DISTINCT p.id) AS proteins_ids, "
                     "COLLECT(DISTINCT ph.id) AS phenotypes_ids"
                 )
                 result_info = session.run(query_info, sample_id=subject)
                 result_info = result_info.single()
-                subject_property = result_info[1] + result_info[2] + result_info[3]
+                subject_property = result_info[1] + result_info[2]
                 data_val.append([subject, subject_property])
-                property_total.extend(result_info[1] + result_info[2] + result_info[3])
+                property_total.extend(result_info[1] + result_info[2])
 
             property_total = np.unique(np.array(property_total))
             disease_total = np.unique(np.array(disease_total))
@@ -406,6 +402,8 @@ class ExecuteState(AppState):
                 # Export DataFrame to CSV file
                 if output_dim == 1:
                     data = {'subjectid': subjects, 'Disease': predicted_classes}
+                    print(len(subjects))
+                    print(len(predicted_classes))
                     df = pd.DataFrame(data)
                     write_csv(df, 'output_a.csv')
                 else:
@@ -422,6 +420,8 @@ class ExecuteState(AppState):
                             if cha[0:5] == "ICD10":
                                 icd.append(cha[8])
                     data = {'subjectid': subjects, 'ICD Code': icd}
+                    print(len(subjects))
+                    print(len(icd))
                     df = pd.DataFrame(data)
                     write_csv(df, 'output_b.csv')
 
