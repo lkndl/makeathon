@@ -422,7 +422,7 @@ class ExecuteState(AppState):
                                 icd.append(cha[8])
                     except Exception:
                         icd.append('J')
-                icd = icd[0:len(subjects)]
+                    icd = icd[0:len(subjects)]
                     print(len(subjects))
                     print(len(icd))
                     df = pd.DataFrame(data)
