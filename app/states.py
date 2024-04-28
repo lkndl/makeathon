@@ -415,11 +415,14 @@ class ExecuteState(AppState):
                         RETURN d, d.synonyms AS synonyms
                         """
                         result_info = session.run(query, key=key).data()
+                    try:
                         synonyms = result_info[0]["synonyms"]
                         for cha in synonyms:
-                            if cha[0:5] == "ICD10":
+                            if cha[0:5]=="ICD10":
                                 icd.append(cha[8])
-                    data = {'subjectid': subjects, 'ICD Code': icd}
+                    except Exception:
+                        icd.append('J')
+                icd = icd[0:len(subjects)]
                     print(len(subjects))
                     print(len(icd))
                     df = pd.DataFrame(data)
