@@ -357,7 +357,7 @@ class ExecuteState(AppState):
                         optimizer.step()  # Update weights
                         running_loss += loss.item() * inputs.size(0)
                     epoch_loss = running_loss / len(train_loader.dataset)
-                    print(f"Epoch [{epoch + 1}/{num_epochs}], Loss: {epoch_loss:.4f}")
+                    logger.info(f"Epoch [{epoch + 1}/{num_epochs}], Loss: {epoch_loss:.4f}")
 
             # Define the testing function
             def test(model, test_loader):
@@ -371,7 +371,7 @@ class ExecuteState(AppState):
                         total += targets.size(0)
                         correct += (predicted == targets).sum().item()
                     accuracy = correct / total
-                    print(f"Test Accuracy: {accuracy:.4f}")
+                    logger.info(f"Test Accuracy: {accuracy:.4f}")
 
             def predict(learning_rate, batch_size, num_epochs, output_dim, X, y, val, health_status, subjects):
                 input_dim = len(data_binary[0][0])
@@ -402,8 +402,8 @@ class ExecuteState(AppState):
                 # Export DataFrame to CSV file
                 if output_dim == 1:
                     data = {'subjectid': subjects, 'Disease': predicted_classes}
-                    print(len(subjects))
-                    print(len(predicted_classes))
+                    logger.info(f'len subjects is {len(subjects)}')
+                    logger.info(f'len predicted_classes {len(predicted_classes)}')
                     df = pd.DataFrame(data)
                     write_csv(df, 'output_a.csv')
                 else:
@@ -423,8 +423,8 @@ class ExecuteState(AppState):
                     except Exception:
                         icd.append('J')
                     icd = icd[0:len(subjects)]
-                    print(len(subjects))
-                    print(len(icd))
+                    logger.info(f'len subjects is {len(subjects)}')
+                    logger.info(f'len icd is {len(icd)}')
                     df = pd.DataFrame(data)
                     write_csv(df, 'output_b.csv')
 
